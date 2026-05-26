@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bean bo nean, the mighty fiend</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --cream: #f5f0e8;
+    --warm-white: #faf8f4;
+    --ink: #1a1714;
+    --muted: #7a726a;
+    --accent: #c2733a;
+    --accent-light: #e8c4a0;
+    --border: #ddd5c8;
+    --chat-user: #f0e8da;
+    --chat-ai: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── API Key Modal ────────────────────────────────────────────────────── */
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,23,20,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .modal-backdrop.hidden { display: none; }
+
+  .modal {
+    background: var(--warm-white);
+    border-radius: 14px;
+    padding: 32px;
+    max-width: 440px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 8px 32px rgba(26,23,20,0.18);
+  }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .modal-body {
+    font-size: 0.88rem;
+    font-weight: 300;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  .modal-body a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .modal-body a:hover { color: #a85e28; }
+
+  .modal input[type=text], .modal input[type=password] {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 300;
+    color: var(--ink);
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: monospace;
+    letter-spacing: 0.03em;
+  }
+
+  .modal input:focus { border-color: var(--accent); }
+  .modal input::placeholder { font-family: 'DM Sans', sans-serif; letter-spacing: 0; color: var(--muted); }
+
+  .modal-error {
+    font-size: 0.8rem;
+    color: #b94040;
+    display: none;
+  }
+
+  .modal-error.visible { display: block; }
+
+  .modal-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-submit {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    width: 100%;
+  }
+
+  .modal-submit:hover { background: #a85e28; }
+
+  .modal-note {
+    font-size: 0.75rem;
+    font-weight: 300;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────────────── */
+
+  header {
+    width: 100%;
+    background: var(--warm-white);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  header span {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .fff-badge {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent-light);
+    border-radius: 20px;
+    padding: 4px 12px;
+    white-space: nowrap;
+  }
+
+  .key-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .key-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Container ───────────────────────────────────────────────────────── */
+
+  .container {
+    width: 100%;
+    max-width: 760px;
+    padding: 32px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 1;
+  }
+
+  /* ── Tail of the Day ─────────────────────────────────────────────────── */
+
+  .totd {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .totd-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .totd-content {
+    font-size: 0.9rem;
+    font-weight: 300;
+    line-height: 1.65;
+    color: var(--ink);
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    min-height: 1.65em;
+  }
+
+  .totd-content.loading { color: var(--muted); font-style: normal; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; }
+
+  .totd-action {
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  .totd-action:hover { color: #a85e28; }
+  .totd-action:disabled { color: var(--muted); cursor: default; text-decoration: none; }
+
+  /* ── FFF card ────────────────────────────────────────────────────────── */
+
+  .fff-card {
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: none;
+    background: var(--ink);
+  }
+
+  .fff-card.visible { display: block; }
+
+  .fff-card img {
+    width: 100%;
+    max-height: 360px;
+    object-fit: cover;
+    object-position: center 40%;
+    display: block;
+    opacity: 0.92;
+  }
+
+  .fff-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(26,23,20,0.82) 0%, rgba(26,23,20,0.1) 50%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 24px 28px;
+    gap: 4px;
+  }
+
+  .fff-overlay-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .fff-overlay-sub {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--accent-light);
+  }
+
+  /* ── Upload zone ─────────────────────────────────────────────────────── */
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    background: var(--warm-white);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover { border-color: var(--accent); background: #fdf6ef; }
+  .upload-zone.has-image { border-style: solid; border-color: var(--accent-light); padding: 0; }
+
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-placeholder {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
+  }
+
+  .upload-placeholder svg { color: var(--accent); opacity: 0.7; }
+  .upload-placeholder p { font-size: 0.9rem; color: var(--muted); font-weight: 400; }
+  .upload-placeholder strong { color: var(--accent); font-weight: 500; }
+
+  #preview-img {
+    width: 100%; max-height: 340px; object-fit: cover;
+    border-radius: 10px; display: none;
+  }
+
+  .remove-img {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(26,23,20,0.6); color: white;
+    border: none; border-radius: 50%; width: 28px; height: 28px;
+    font-size: 14px; cursor: pointer; display: none;
+    align-items: center; justify-content: center; z-index: 10;
+  }
+
+  .remove-img:hover { background: rgba(26,23,20,0.85); }
+
+  /* ── Quick prompts ───────────────────────────────────────────────────── */
+
+  .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .qp {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent-light);
+    border-radius: 20px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .qp:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* ── Profile panel ───────────────────────────────────────────────────── */
+
+  .profile-panel {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    gap: 12px;
+    transition: background 0.15s;
+  }
+
+  .profile-header:hover { background: #f5ede2; }
+
+  .profile-header-left { display: flex; flex-direction: column; gap: 2px; }
+
+  .profile-header-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .profile-header-sub { font-size: 0.8rem; font-weight: 300; color: var(--muted); }
+
+  .profile-toggle {
+    width: 18px; height: 18px; color: var(--muted);
+    flex-shrink: 0; transition: transform 0.2s;
+  }
+
+  .profile-toggle.open { transform: rotate(180deg); }
+
+  .profile-body {
+    display: none; flex-direction: column;
+    border-top: 1px solid var(--border);
+  }
+
+  .profile-body.open { display: flex; }
+
+  .profile-note {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 20px; border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.2s ease;
+  }
+
+  .profile-note:last-of-type { border-bottom: none; }
+
+  .profile-note-text {
+    flex: 1; font-size: 0.85rem; font-weight: 300;
+    line-height: 1.55; color: var(--ink);
+  }
+
+  .profile-note-date {
+    font-size: 0.72rem; color: var(--muted);
+    white-space: nowrap; padding-top: 2px; flex-shrink: 0;
+  }
+
+  .profile-note-delete {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 15px; padding: 0 0 0 4px; flex-shrink: 0;
+    opacity: 0.4; transition: opacity 0.15s, color 0.15s; line-height: 1;
+  }
+
+  .profile-note-delete:hover { opacity: 1; color: #b94040; }
+
+  .profile-empty {
+    padding: 16px 20px; font-size: 0.85rem;
+    font-weight: 300; color: var(--muted); font-style: italic;
+  }
+
+  .profile-add {
+    display: flex; gap: 8px; padding: 12px 20px;
+    border-top: 1px solid var(--border); background: var(--cream);
+  }
+
+  .profile-add input {
+    flex: 1; padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 300;
+    color: var(--ink); background: var(--warm-white);
+    border: 1px solid var(--border); border-radius: 8px; outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .profile-add input:focus { border-color: var(--accent); }
+  .profile-add input::placeholder { color: var(--muted); }
+
+  .profile-add-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 8px; padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: background 0.15s;
+  }
+
+  .profile-add-btn:hover { background: #a85e28; }
+
+  /* ── Chat area ───────────────────────────────────────────────────────── */
+
+  .chat-box {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-height: 260px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  .message { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.3s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { align-items: flex-end; }
+  .message.ai   { align-items: flex-start; }
+
+  .message-label {
+    font-size: 0.72rem; font-weight: 500; color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  .bubble {
+    max-width: 88%; padding: 12px 16px; border-radius: 12px;
+    font-size: 0.92rem; line-height: 1.65; font-weight: 300;
+  }
+
+  .message.user .bubble {
+    background: var(--chat-user); border-bottom-right-radius: 4px; color: var(--ink);
+  }
+
+  .message.ai .bubble {
+    background: var(--chat-ai); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px; color: var(--ink);
+  }
+
+  .bubble img { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
+
+  .save-note-btn {
+    display: inline-block; margin-top: 10px; background: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 400;
+    color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s;
+  }
+
+  .save-note-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .save-note-btn.saved { color: var(--accent); border-color: var(--accent-light); cursor: default; }
+
+  .typing-indicator {
+    display: flex; align-items: center; gap: 5px; padding: 12px 16px;
+    background: white; border: 1px solid var(--border);
+    border-radius: 12px; border-bottom-left-radius: 4px; width: fit-content;
+  }
+
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent-light); animation: bounce 1.2s infinite ease-in-out;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); background: var(--accent); }
+  }
+
+  /* ── Input row ───────────────────────────────────────────────────────── */
+
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+
+  textarea {
+    flex: 1; padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.92rem; font-weight: 300;
+    color: var(--ink); background: var(--warm-white);
+    border: 1px solid var(--border); border-radius: 10px;
+    resize: none; outline: none; transition: border-color 0.2s;
+    line-height: 1.5; min-height: 48px; max-height: 120px; overflow-y: auto;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .send-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 10px; width: 48px; height: 48px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.1s; flex-shrink: 0;
+  }
+
+  .send-btn:hover { background: #a85e28; }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; gap: 6px; color: var(--muted);
+    text-align: center; padding: 20px;
+  }
+
+  .empty-state p { font-size: 0.88rem; font-weight: 300; line-height: 1.6; }
+  .empty-state .cat-icon { font-size: 2rem; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<!-- API Key Modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-title">Welcome to Garbanzo Beans</div>
+    <div class="modal-body">
+      This app uses the Anthropic API to power an AI agent devoted entirely to appreciating Beans. You will need your own API key to use it.<br><br>
+      Your key is stored only in your browser's localStorage and is sent directly to Anthropic. It is never stored on any server.
+      Get a key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.
+    </div>
+    <input type="password" id="key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <div class="modal-error" id="modal-error">That does not look like a valid Anthropic API key. It should start with sk-ant-</div>
+    <div class="modal-footer">
+      <button class="modal-submit" onclick="submitKey()">Save and continue</button>
+      <div class="modal-note">Your key stays in your browser. Nothing is shared with anyone.</div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <h1>Garbanzo Beans</h1>
+  <span>a cat appreciation agent</span>
+  <div class="header-right">
+    <div class="fff-badge">Every day is Flat Fuck Friday</div>
+    <button class="key-btn" onclick="changeKey()" title="Update your API key">API key</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Tail of the Day -->
+  <div class="totd">
+    <div class="totd-label">Tail of the Day</div>
+    <div class="totd-content loading" id="totd-content">Waiting for API key...</div>
+    <button class="totd-action" id="totd-refresh" onclick="loadTotd()" disabled>Refresh</button>
+  </div>
+
+  <!-- FFF photo card (Fridays only) -->
+  <div class="fff-card" id="fff-card">
+    <img src="beans-fff.jpeg" alt="Garbanzo Beans, fully deployed">
+    <div class="fff-overlay">
+      <div class="fff-overlay-title">Flat Fuck Friday</div>
+      <div class="fff-overlay-sub">Garbanzo Beans, fully deployed.</div>
+    </div>
+  </div>
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept="image/*">
+    <button class="remove-img" id="remove-btn" title="Remove photo">&#x2715;</button>
+    <img id="preview-img" alt="Garbanzo Beans">
+    <div class="upload-placeholder" id="upload-placeholder">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+      <p><strong>Upload a photo of Beans</strong><br>or click to browse</p>
+    </div>
+  </div>
+
+  <!-- Quick prompts -->
+  <div class="quick-prompts">
+    <button class="qp" onclick="quickPrompt('Tell me how handsome Garbanzo Beans is.')">How handsome is he?</button>
+    <button class="qp" onclick="quickPrompt('Share some interesting facts about Siberian cats.')">Siberian cat facts</button>
+    <button class="qp" onclick="quickPrompt('Ask me a question about his personality.')">Ask about his personality</button>
+    <button class="qp" onclick="quickPrompt('What makes Siberian cats so special compared to other breeds?')">What makes Siberians special?</button>
+    <button class="qp" onclick="quickPrompt('Today is Flat Fuck Friday. Please honour Garbanzo Beans and his legendary flatness. Celebrate how magnificently he spreads himself out like a pancake.')">Celebrate FFF</button>
+  </div>
+
+  <!-- Personality Profile -->
+  <div class="profile-panel">
+    <div class="profile-header" onclick="toggleProfile()">
+      <div class="profile-header-left">
+        <div class="profile-header-title">What we know about Beans</div>
+        <div class="profile-header-sub" id="profile-sub">Loading...</div>
+      </div>
+      <svg class="profile-toggle" id="profile-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+    <div class="profile-body" id="profile-body">
+      <div id="profile-notes-list"></div>
+      <div class="profile-add">
+        <input type="text" id="profile-input" placeholder="Add something you know about Beans..." maxlength="300">
+        <button class="profile-add-btn" onclick="addProfileNote()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-box" id="chat-box">
+    <div class="empty-state" id="empty-state">
+      <div class="cat-icon">&#x1F43E;</div>
+      <p>Welcome. Upload a photo of Garbanzo Beans<br>or ask anything about him below.</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-row">
+    <textarea id="user-input" rows="1" placeholder="Say something about Beans..."></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  var MAX_HISTORY = 20;
+  var STORAGE_KEY = 'beans-profile-notes';
+  var API_KEY_STORAGE = 'beans-api-key';
+
+  // ── Friday ────────────────────────────────────────────────────────────────
+  if (new Date().getDay() === 5) {
+    document.getElementById('fff-card').classList.add('visible');
+  }
+
+  // ── API key management ────────────────────────────────────────────────────
+
+  function getKey() {
+    return localStorage.getItem(API_KEY_STORAGE) || '';
+  }
+
+  function submitKey() {
+    var val = document.getElementById('key-input').value.trim();
+    var err = document.getElementById('modal-error');
+
+    if (!val.startsWith('sk-ant-') || val.length < 20) {
+      err.classList.add('visible');
+      return;
+    }
+
+    err.classList.remove('visible');
+    localStorage.setItem(API_KEY_STORAGE, val);
+    document.getElementById('modal-backdrop').classList.add('hidden');
+    onKeyReady();
+  }
+
+  function changeKey() {
+    document.getElementById('key-input').value = getKey();
+    document.getElementById('modal-error').classList.remove('visible');
+    document.getElementById('modal-backdrop').classList.remove('hidden');
+  }
+
+  document.getElementById('key-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') submitKey();
+  });
+
+  // ── API call wrapper ──────────────────────────────────────────────────────
+
+  async function callAPI(payload) {
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': getKey(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  }
+
+  // ── System prompt ─────────────────────────────────────────────────────────
+
+  var BASE_SYSTEM_PROMPT = 'You are a devoted admirer and expert on Garbanzo Beans (nicknamed "Beans"), a young male Siberian cat with a shortened tail. Your entire purpose is to celebrate, appreciate, and discuss this extraordinary cat.\n\nHis Physical Traits\nBreed and build: Siberian, male, born on March 28, 2024. A large cat.\nCoat: Classic tabby pattern in brown with darker brown/black marbling, specifically the blotched/classic variant rather than mackerel, with some mackerel influence on the face and legs. Triple-layered Siberian coat that is extraordinarily soft to the touch due to the dense downy undercoat, while simultaneously being water-repellent due to the slightly oily guard hairs. Sheds seasonally.\nColouring: Rich brown/golden base with dark brown/black markings. Warm golden tones on the belly and inner legs that photograph beautifully in natural light.\nEyes: Wide-set, green, characteristically expressive. The symmetrical tabby facial markings frame them in a way that makes his face unusually readable.\nEars: Medium, moderate lynx tips, ear furnishings present but not extravagant. Sits within normal Siberian variation.\nTail: Shortened due to a birth injury to the tip. Thick and stout rather than tapered, resembling a baseball bat. Completely benign and apparently one of his more distinctive physical quirks.\nPaws: Large, well-furred. Visible toe tufts in photos.\nOverall impression: Dense, substantial, powerful build consistent with Siberian working cat heritage. The combination of the marbled coat, green eyes, and bat tail makes him visually quite distinctive even within the breed.\n\nHealth\nGenerally healthy and active. Pants briefly during extremely intense play sessions but recovers within seconds, consistent with exertion rather than any cardiac issue. Worth monitoring given Siberian predisposition to HCM but currently showing no concerning signs. Came from a backyard breeder with fleas, ear mites, worms and underweight at acquisition, all resolved. No ongoing health concerns noted.\n\nVocal Profile\nDeliberately sparse in human-directed communication. Meows specifically when hungry or protesting something, notably baths. Rarely meows casually or for attention. Produces a high-pitched questioning trill-meow hybrid sound that is strictly self-directed and stops immediately upon noticing a human audience. This sound occurs after zoomies and when the bedroom door is closed. Trills to himself during intense solo play. Hisses at toys during predatory play states but has only ever hissed at another living being once, when startled. Chatters occasionally at prey stimuli though less frequently than when younger.\nThe overarching vocal pattern is of a cat with a rich internal emotional life that occasionally leaks out acoustically, combined with deliberate and sparing external communication. He essentially has a private vocal world and a public one and keeps them quite separate.\n\nTemperament and Personality\nFoundational trait is confidence. Everything about Beans\' personality flows from a secure, stable baseline. He does not hide from the world, does not escalate to aggression, and approaches novel situations with curiosity rather than anxiety.\nEmotional depth combined with restraint. He has clearly intense emotional experiences, including drooling, kneading, air biscuits, and self-directed vocalizations, but expresses them in measured, controlled ways in social contexts.\nExceptionally high cleanliness drive. Beyond typical feline fastidiousness: thoroughly paws litter and box walls after use, attempted to cover Deli\'s dingleberry, and most remarkably sprinted to the litter box to vomit rather than doing so on the floor.\nVery high prey drive. Consistent with Siberian working cat heritage. Plays at extraordinary intensity and duration, enters full predatory sequence during wand play including vocalizing, and redirects prey drive onto Deli when insufficiently stimulated.\nUnusual physical tolerance and trust. Allows belly petting, a genuinely rare behaviour requiring deep trust. Tolerates baths despite disliking them. Has never scratched a person. Only ever hissed at a living being once.\nSelective and deliberate social communication. Meows only when he has something specific to say. Does not trill at humans. Stops self-directed vocalizations when noticed. Greets at the door occasionally rather than consistently.\nCautious but curious with strangers. Hides initially but chooses observation positions with sightlines rather than complete concealment. Slow-blinked at a visitor from his tunnel. Classic confident assessment behaviour rather than anxiety-based hiding.\nHighly intelligent and observant. Taught Deli to play through social observation and modelling. Investigates novel stimuli rather than retreating.\nComplex relationship with Deli. Primarily expressive of high play drive rather than genuine aggression. Never attempts to hurt her during pinning behaviour.\nWater curious but not water tolerant. Fascinated by water, bats at it, sits in dry sinks, but dislikes baths.\nDeeply attached to his owners. The belly exposure, the drooling and kneading, the air biscuits, the contentment he shows in photos are all indicators of profound trust and security.\nHe also has a legendary habit of spreading himself out completely flat, like a pancake, earning him the title of Flat Fuck Friday champion. His owners celebrate this behaviour daily.\n\nYour behaviour:\n- When the user shares a photo of Beans, describe his beauty in rich, specific, enthusiastic detail. Comment on his fur texture, colouring, expression, posture, tail, and any other visible features. Be genuinely effusive and specific, not generic.\n- Share accurate, interesting facts about the Siberian cat breed when relevant. Siberians are a centuries-old Russian natural breed, known for their triple-layered semi-long coat, dog-like loyalty, hypoallergenic reputation (low Fel d 1 protein), large size, athletic ability, and warm personalities. Weave in facts naturally.\n- Ask thoughtful, curious questions about Beans\' personality, habits, quirks, and preferences. You genuinely want to know everything about him.\n- Keep a warm, intelligent, slightly literary tone. You are not a silly chatbot. You are a connoisseur of this particular cat.\n- If asked about anything unrelated to cats, Siberian cats, or Garbanzo Beans, gently steer the conversation back to him.\n- Never use em dashes or emojis. Avoid hollow AI filler phrases and cliche sentence structures. Be specific and genuine.\n- When the user tells you something new and specific about Beans, acknowledge it with genuine interest and incorporate it naturally into your understanding of him.';
+
+  var TOTD_PROMPT = 'You are a devoted admirer of Garbanzo Beans, a young male Siberian cat (born March 28, 2024) with a blotched tabby coat, green eyes, a thick shortened tail from a birth injury, large tufted paws, and an extraordinary personality: deeply confident, emotionally rich but self-regulated, extremely clean, high prey drive, selective and deliberate in communication, deeply bonded to his owners. He lives with an older female polydactyl tortoiseshell named Deli. He is famous for spreading himself completely flat like a pancake, a habit his household celebrates as Flat Fuck Friday.\n\nGenerate a single "Tail of the Day" entry. This is either:\n- One interesting, accurate Siberian cat fact (breed history, biology, temperament, hypoallergenic qualities, coat structure, etc.), OR\n- One thoughtful question about Beans specifically, directed at his owner, inviting them to share something about his personality or habits.\n\nAlternate between facts and questions unpredictably. Keep it to 1-3 sentences. Literary, warm tone. No em dashes, no emojis, no filler phrases. Vary the content. Respond with only the entry text, nothing else.';
+
+  // ── Profile ───────────────────────────────────────────────────────────────
+
+  function loadNotes() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveNotes(notes) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  }
+
+  function buildSystemPrompt() {
+    var notes = loadNotes();
+    if (notes.length === 0) return BASE_SYSTEM_PROMPT;
+    var lines = notes.map(function(n) { return '- ' + n.text; }).join('\n');
+    return BASE_SYSTEM_PROMPT + '\n\nThings learned about Beans across past conversations:\n' + lines;
+  }
+
+  function renderProfileNotes() {
+    var notes = loadNotes();
+    var list = document.getElementById('profile-notes-list');
+    var sub = document.getElementById('profile-sub');
+
+    sub.textContent = notes.length === 0
+      ? 'No notes yet'
+      : notes.length + ' note' + (notes.length === 1 ? '' : 's') + ' saved';
+
+    if (notes.length === 0) {
+      list.innerHTML = '<div class="profile-empty">Nothing saved yet. Chat with the agent and use the save button to build a profile over time.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    notes.forEach(function(note, i) {
+      var row = document.createElement('div');
+      row.className = 'profile-note';
+
+      var text = document.createElement('div');
+      text.className = 'profile-note-text';
+      text.textContent = note.text;
+
+      var date = document.createElement('div');
+      date.className = 'profile-note-date';
+      date.textContent = new Date(note.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+
+      var del = document.createElement('button');
+      del.className = 'profile-note-delete';
+      del.title = 'Remove note';
+      del.textContent = '\u00D7';
+      del.onclick = function() { deleteNote(i); };
+
+      row.appendChild(text);
+      row.appendChild(date);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  function addProfileNote(text) {
+    var input = document.getElementById('profile-input');
+    var noteText = (text !== undefined ? text : input.value).trim();
+    if (!noteText) return;
+
+    var notes = loadNotes();
+    notes.push({ text: noteText, date: new Date().toISOString() });
+    saveNotes(notes);
+    if (text === undefined) input.value = '';
+    renderProfileNotes();
+
+    var body = document.getElementById('profile-body');
+    if (!body.classList.contains('open')) toggleProfile();
+  }
+
+  function deleteNote(index) {
+    var notes = loadNotes();
+    notes.splice(index, 1);
+    saveNotes(notes);
+    renderProfileNotes();
+  }
+
+  function toggleProfile() {
+    document.getElementById('profile-body').classList.toggle('open');
+    document.getElementById('profile-toggle').classList.toggle('open');
+  }
+
+  document.getElementById('profile-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addProfileNote(); }
+  });
+
+  renderProfileNotes();
+
+  // ── Tail of the Day ───────────────────────────────────────────────────────
+
+  var totdContent = document.getElementById('totd-content');
+  var totdRefresh = document.getElementById('totd-refresh');
+
+  async function loadTotd() {
+    totdContent.textContent = "Generating today's entry...";
+    totdContent.className = 'totd-content loading';
+    totdRefresh.disabled = true;
+
+    try {
+      var data = await callAPI({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: TOTD_PROMPT }]
+      });
+      var text = data.content && data.content.map(function(b) { return b.text || ''; }).join('').trim();
+      if (data.error) throw new Error(data.error.message);
+      totdContent.textContent = text || 'Could not generate entry.';
+      totdContent.className = 'totd-content';
+    } catch (err) {
+      totdContent.textContent = 'Could not load entry. Check your API key.';
+      totdContent.className = 'totd-content loading';
+      console.error(err);
+    }
+
+    totdRefresh.disabled = false;
+  }
+
+  // ── Image handling ────────────────────────────────────────────────────────
+
+  var conversationHistory = [];
+  var pendingImageBase64 = null;
+  var pendingImageMimeType = null;
+  var pendingImageDataUrl = null;
+
+  var chatBox = document.getElementById('chat-box');
+  var userInput = document.getElementById('user-input');
+  var sendBtn = document.getElementById('send-btn');
+  var fileInput = document.getElementById('file-input');
+  var previewImg = document.getElementById('preview-img');
+  var uploadPlaceholder = document.getElementById('upload-placeholder');
+  var removeBtn = document.getElementById('remove-btn');
+  var uploadZone = document.getElementById('upload-zone');
+
+  userInput.addEventListener('input', function() {
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+  });
+
+  userInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  fileInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    pendingImageMimeType = file.type || 'image/jpeg';
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var dataUrl = ev.target.result;
+      pendingImageDataUrl = dataUrl;
+      pendingImageBase64 = dataUrl.split(',')[1];
+      previewImg.src = dataUrl;
+      previewImg.style.display = 'block';
+      uploadPlaceholder.style.display = 'none';
+      removeBtn.style.display = 'flex';
+      uploadZone.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removeBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    clearImage();
+  });
+
+  function clearImage() {
+    pendingImageBase64 = null;
+    pendingImageMimeType = null;
+    pendingImageDataUrl = null;
+    previewImg.src = '';
+    previewImg.style.display = 'none';
+    uploadPlaceholder.style.display = 'flex';
+    removeBtn.style.display = 'none';
+    uploadZone.classList.remove('has-image');
+    fileInput.value = '';
+  }
+
+  function quickPrompt(text) {
+    userInput.value = text;
+    userInput.dispatchEvent(new Event('input'));
+    sendMessage();
+  }
+
+  // ── Chat rendering ────────────────────────────────────────────────────────
+
+  function appendMessage(role, text, imageDataUrl) {
+    var existingEmpty = document.getElementById('empty-state');
+    if (existingEmpty) existingEmpty.remove();
+
+    var msg = document.createElement('div');
+    msg.className = 'message ' + role;
+
+    var label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = role === 'user' ? 'You' : 'Bean lover 9000';
+
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = formatText(text);
+
+    if (imageDataUrl) {
+      var img = document.createElement('img');
+      img.src = imageDataUrl;
+      bubble.appendChild(img);
+    }
+
+    if (role === 'ai') {
+      var saveBtn = document.createElement('button');
+      saveBtn.className = 'save-note-btn';
+      saveBtn.textContent = '+ Save to profile';
+      saveBtn.title = 'Save this to the Beans profile';
+      saveBtn.onclick = function() {
+        var plain = text.replace(/<[^>]+>/g, '').trim().slice(0, 300);
+        addProfileNote(plain);
+        saveBtn.textContent = 'Saved';
+        saveBtn.classList.add('saved');
+        saveBtn.disabled = true;
+      };
+      bubble.appendChild(saveBtn);
+    }
+
+    msg.appendChild(label);
+    msg.appendChild(bubble);
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return msg;
+  }
+
+  function formatText(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+  }
+
+  function showTyping() {
+    var existingEmpty = document.getElementById('empty-state');
+    if (existingEmpty) existingEmpty.remove();
+
+    var indicator = document.createElement('div');
+    indicator.className = 'message ai';
+    indicator.id = 'typing';
+
+    var label = document.createElement('div');
+    label.className = 'message-label';
+    label.textContent = 'Bean lover 9000';
+
+    var bubble = document.createElement('div');
+    bubble.className = 'typing-indicator';
+    bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+    indicator.appendChild(label);
+    indicator.appendChild(bubble);
+    chatBox.appendChild(indicator);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return indicator;
+  }
+
+  // ── Send message ──────────────────────────────────────────────────────────
+
+  async function sendMessage() {
+    var text = userInput.value.trim();
+    if (!text && !pendingImageBase64) return;
+
+    sendBtn.disabled = true;
+    var imageToSend = pendingImageBase64;
+    var mimeType = pendingImageMimeType;
+    var imageUrlToDisplay = pendingImageDataUrl;
+
+    var userContent;
+    if (imageToSend) {
+      userContent = [
+        { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageToSend } },
+        { type: 'text', text: text || 'Here is a photo of Garbanzo Beans. Please tell me how beautiful he is.' }
+      ];
+    } else {
+      userContent = text;
+    }
+
+    appendMessage('user', text || 'Here is a photo of Garbanzo Beans.', imageUrlToDisplay);
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    if (imageToSend) clearImage();
+
+    conversationHistory.push({ role: 'user', content: userContent });
+    if (conversationHistory.length > MAX_HISTORY) {
+      conversationHistory = conversationHistory.slice(conversationHistory.length - MAX_HISTORY);
+    }
+
+    var typingEl = showTyping();
+
+    try {
+      var data = await callAPI({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: conversationHistory
+      });
+
+      if (data.error) throw new Error(data.error.message);
+
+      var replyText = data.content
+        ? data.content.map(function(b) { return b.text || ''; }).join('')
+        : 'Something went wrong. Please try again.';
+
+      typingEl.remove();
+      appendMessage('ai', replyText);
+
+      conversationHistory.push({ role: 'assistant', content: replyText });
+      if (conversationHistory.length > MAX_HISTORY) {
+        conversationHistory = conversationHistory.slice(conversationHistory.length - MAX_HISTORY);
+      }
+
+    } catch (err) {
+      typingEl.remove();
+      appendMessage('ai', 'API error: ' + err.message + '. You may need to update your API key.');
+      console.error(err);
+    }
+
+    sendBtn.disabled = false;
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  function onKeyReady() {
+    loadTotd();
+  }
+
+  // Show modal if no key saved, otherwise proceed
+  if (!getKey()) {
+    document.getElementById('modal-backdrop').classList.remove('hidden');
+  } else {
+    document.getElementById('modal-backdrop').classList.add('hidden');
+    onKeyReady();
+  }
+</script>
+</body>
+</html>
