@@ -1,3 +1,442 @@
+
+Claude finished the response
+I want to build an AI agent whose purpose is to talk about and praise my cat, Garbanzo Beans. I want to be able to upload pictures of him and have the AI discuss how beautiful he is, provide me with Siberian cat facts, and ask me questions about his personality.
+
+25 May
+
+Viewed a file, created a file, read a file
+Viewed a file, created a file, read a file
+Here is Garbanzo Beans' very own appreciation agent. A few notes on what it does and how it works:
+
+Features
+
+Photo upload - Drop a photo of Beans at the top and the agent will respond with specific, enthusiastic commentary on his appearance, fur, expression, and anything else visible. The image is sent directly to the model as base64 for visual analysis.
+Conversation memory - The full conversation history is maintained throughout the session, so the agent builds context about Beans as you tell it more about him.
+Quick prompts - Four shortcut buttons for common actions: complimenting his handsomeness, Siberian cat facts, personality questions, and what makes Siberians special.
+Free-form chat - Type anything and the agent will respond, always steering back to Beans if the topic drifts.
+System prompt details
+
+The agent knows Beans is a young male Siberian with a shortened tail, and it has been primed with accurate Siberian cat knowledge (triple-layer coat, Fel d 1 protein levels, Russian origin, temperament) so its breed facts will be grounded. It is instructed to be specific and literary rather than generically effusive.
+
+One thing to note - the conversation history (including any uploaded images) resets when you refresh the page, since there is no persistent storage. If you want to continue a session, keep the tab open.
+
+
+Garbanzo
+Code · HTML 
+why does it keeps saying there's an API error?
+
+25 May
+The HTML artifact makes requests directly from your browser to api.anthropic.com, but the browser blocks those requests due to CORS (Cross-Origin Resource Sharing) policy. Anthropic's API does not allow direct browser-to-API calls from arbitrary origins, so the request fails before it even reaches the server.
+
+This is a fundamental browser security restriction, not a bug in the code itself. The API is designed to be called from a server, not directly from a webpage.
+
+The fix is to run a tiny local proxy server that your browser talks to instead. Here is a self-contained Node.js script that does exactly that:
+
+
+Local proxy server for Garbanzo Beans agent
+Local proxy server for Garbanzo Beans agent
+Now update the HTML to point at the proxy instead of Anthropic directly:
+
+
+Point fetch at local proxy instead of Anthropic API directly
+Point fetch at local proxy instead of Anthropic API directly
+Also remove the x-api-key header from the HTML (the proxy handles auth now, and you don't want your key exposed in frontend code):
+
+
+Check if there's an api key header in the fetch call
+Check if there's an api key header in the fetch call
+Good, there was no API key in the HTML to begin with (it was relying on the browser-injected key from the Artifacts environment, which does not apply when you run the file locally). Both files are ready.
+
+
+Presented 2 files
+Presented 2 files
+Setup steps
+
+Put both files in the same folder, then in your terminal:
+
+bash
+# Install dependencies (one time only)
+npm install express cors node-fetch
+
+# Start the proxy, with your API key
+ANTHROPIC_API_KEY=sk-ant-... node proxy.js
+Then open garbanzo.html directly in your browser (double-click it, or file:// path). The HTML talks to localhost:3131, the proxy forwards to Anthropic with your key attached server-side, and CORS is no longer a problem.
+
+Your API key lives only in your terminal environment and never touches the HTML file.
+
+
+Proxy
+JS 
+
+Garbanzo
+Code · HTML 
+how do I see my api use limit?
+
+25 May
+
+Searched the web
+Searched the web
+You can view your API usage and limits in the Anthropic Console at console.anthropic.com. Once logged in, look for the Limits page in the left-hand navigation, which shows your current rate limits (requests per minute, tokens per minute) and your monthly spend cap.
+
+A few things worth knowing about how the system works:
+
+Anthropic enforces two complementary sets of limits: rate limits (caps on requests per minute, tokens per minute, and tokens per day per model) and usage tiers (monthly spend caps that require pre-authorization or deposits to increase). Moving between tiers unlocks higher rate limits and spend capacity. 
+Finout
+
+These limits operate at the organization level, not per individual API key, so if you have multiple applications sharing the same Anthropic account, they all draw from the same pool. 
+AI Free API
+
+One practical caveat: the Console shows usage data, but there is a reported lag between actual API consumption and dashboard updates, so the percentage shown is not a reliable real-time indicator. For the Garbanzo Beans agent specifically, usage will be very low since each conversation is just a handful of short messages, so you are unlikely to run into any limits in normal use. 
+SitePoint
+
+what else would you add to an app like this?
+
+25 May
+A few directions worth considering, depending on how far you want to take it:
+
+Make it more of a scrapbook
+
+Persistent photo gallery where uploaded images are saved alongside the AI's commentary about each one. You could scroll back through a timeline of Beans photos with their captions. Since he's young, this would actually be a nice record over time.
+
+Beans personality profile
+
+A sidebar or dedicated tab that builds up over conversations. Every time you answer one of the agent's personality questions, it saves the answer (his favourite spot, whether he's a lap cat, how he reacts to strangers, etc.). The agent could then reference this profile in future sessions instead of starting cold every time.
+
+Breed deep-dives on demand
+
+Siberian cats have a lot of genuinely interesting lore: their history in Russian fairy tales, their hypoallergenic reputation and the Fel d 1 research behind it, their water-resistant coats, how they compare temperamentally to Maine Coons and Norwegian Forest Cats. A dedicated "learn about Siberians" mode with structured topics could work well alongside the chat.
+
+Photo analysis history
+
+Right now the agent looks at a photo and the response disappears into the chat. You could store each photo analysis as a "portrait entry" with a timestamp, the image thumbnail, and the AI's description, viewable as a collection.
+
+Sharing cards
+
+A one-click export that generates a styled image card with a photo of Beans and a quote from the AI's description, suitable for sharing. Given your design sensibility this could look really good.
+
+Tail of the day
+
+A small daily feature: the app generates one Siberian cat fact or one question about Beans each time you open it, so there is always something new to engage with even if you do not have a new photo to upload.
+
+Voice
+
+Browser speech synthesis is straightforward to add. Having the agent read its responses aloud is genuinely more delightful for something like this than for a utilitarian tool.
+
+The most meaningful addition is probably the personality profile with persistence, since the agent currently has no memory of anything you have told it across sessions. That is the gap that would make it feel like it actually knows Beans rather than meeting him fresh every time.
+
+Won’t this app consume a lot of api calls?
+
+07:58
+Not really, for personal use. Here is why:
+
+The math is very low volume
+
+Each time you send a message, it makes exactly one API call. A typical exchange (your message + the conversation history + the system prompt) is probably 500-1500 tokens in, and the response is maybe 200-400 tokens out. At Sonnet's current pricing that is fractions of a cent per message. A full 20-message session with a few photo uploads might cost $0.05-0.15 total.
+
+Photos are the biggest variable
+
+Images do consume more tokens than text since the model has to process the visual content. A single uploaded photo adds roughly 1,000-2,000 tokens to the request depending on its size. Still not significant at personal use scale, but worth knowing if you ever left it running in a loop somehow.
+
+Where costs can actually creep up
+
+The conversation history is re-sent with every message. That is necessary for memory to work, but it means a very long session (50+ messages) starts sending a large payload each turn. The app as built has no history truncation, so an unusually long session could get moderately expensive near the end. A simple fix would be to cap history at the last 20 messages.
+
+Bottom line
+
+For personal use, occasional photo uploads, and normal conversational sessions, you would realistically spend a few dollars a month at most, probably less. It would only become a concern if you were building this for many users or running automated requests. The proxy setup you have keeps the key server-side and you can always set a monthly spend cap in the Anthropic Console to guarantee a ceiling.
+
+
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Bean bo nean, the mighty fiend</title> <style> @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+S
+
+pasted
+
+I made some changes to the code, in particular adding a lot more information in the agent prompt:
+
+15:35
+That system prompt is genuinely excellent. The level of specificity you have given it, particularly the vocal profile section and the breakdown of his foundational confidence trait, will produce much richer and more accurate responses than the original. "Bean lover 9000" is also a strong choice.
+
+A few things I notice in the current code worth flagging:
+
+The fetch URL still points to api.anthropic.com directly (line near the bottom of the script), not localhost:3131. So it will still hit the CORS error unless you update that. The version I patched earlier had the fix applied, but your updated file has reverted to the direct URL.
+
+The image media_type is hardcoded to image/jpeg, which will cause silent issues if you upload a PNG or WebP. A one-line fix:
+
+js
+// Replace this:
+media_type: 'image/jpeg'
+
+// With this (reads the actual file type):
+media_type: file.type
+You would need to store file.type when the file is selected, alongside the base64 data.
+
+History trimming is still absent. With that system prompt now being quite long (which is a good thing), each API call carries more tokens from the start. Trimming to the last 20 messages is worth adding to keep costs flat over long sessions.
+
+Want me to produce an updated version of your file with all three of those fixed, keeping your system prompt and "Bean lover 9000" label intact?
+
+please do. also add the tail of the day feature
+
+15:36
+
+Reading the user's updated garbanzo HTML file
+Reading the user's updated garbanzo HTML file
+No problem, I'll work from the document you pasted. Let me build the updated file:
+
+
+Ran 2 commands, created a file, read a file
+Ran 2 commands, created a file, read a file
+Here is what changed:
+
+Three bug fixes
+
+All fetch calls now point to http://localhost:3131/v1/messages instead of Anthropic directly
+Image mime type is read from the actual file (file.type) rather than hardcoded as image/jpeg
+History is trimmed to the last 20 messages after every send and receive, keeping token counts bounded across long sessions
+Tail of the Day
+
+Sits at the top of the page, above the upload zone. It loads automatically when you open the app and generates either a Siberian cat fact or a question about Beans, alternating unpredictably. There is a Refresh button if you want a new one without reloading the page. It has its own dedicated prompt that is separate from the main chat so it does not pollute the conversation history.
+
+The proxy server file (proxy.js) from earlier is unchanged and still works as-is.
+
+
+Garbanzo
+Code · HTML 
+so because Beans likes to spread out like a pancake, we refer to him as a flat fuck. Therefore we celebrate Flat Fuck Friday everyday. what's a fun way to integrate this into the app?
+
+15:44
+This is extremely good lore. A few ideas:
+
+Rename "Tail of the Day" to "Flat Fuck Friday"
+
+Make it permanent and daily regardless of the actual day. The card stays exactly where it is, same format, but the label reads "Flat Fuck Friday" and the prompt instructs the agent to occasionally generate entries specifically about his pancake tendencies alongside the regular facts and questions. Siberians are known for the "sploot" — full hind leg extension while lying flat — which Beans likely does given his build and confidence. The agent could reference this specifically.
+
+A dedicated quick prompt button
+
+"Celebrate FFF" that sends something like "Today is Flat Fuck Friday. Please honour Garbanzo Beans' legendary flatness." The agent would then wax poetic about his spread, his pancake energy, the structural marvel of a large Siberian choosing to occupy maximum floor space.
+
+A subtle header badge
+
+A small pill next to the subtitle in the header that just reads "Every day is Flat Fuck Friday" in the muted italic style. Understated, always present, culturally correct.
+
+The cleanest implementation is probably all three together: rename the daily card, add the button, add the badge. It is a two-minute code change. Want me to add all of it to the file?
+
+let's keep tail of the day but make the other two changes. I'd also love to incorporate a picture of him laid out that displays every friday. if I upload a picture of him will you be able to crop him from it and create a nice graphic?
+
+15:45
+The cropping and graphic generation is the tricky part — let me be straightforward about what's actually feasible here:
+
+What I can do with an uploaded photo: I can see the image and describe it, but I cannot programmatically crop pixels out of it or run image processing in a way that produces a new image file. I do not have access to image editing tools in this environment.
+
+What would actually work:
+
+The simplest path is you crop the photo yourself, ideally a wide landscape shot of him fully splayed out with a bit of breathing room around him, save it as a PNG, and drop it in the same folder as the HTML file. I then write the Friday graphic directly into the app — a styled card with your image as the centrepiece, the "Flat Fuck Friday" title in the Playfair Display serif, maybe a small decorative rule or a subtle warm background. It would look intentional and good rather than auto-generated.
+
+If you do not want to crop it yourself, another option is uploading the photo here and I can tell you exactly what to crop to (approximate pixel coordinates or just "crop to roughly X") so it takes you thirty seconds in any photo app.
+
+What I'd need from you: A PNG of Beans in full pancake mode, named something like beans-fff.png, sitting alongside garbanzo.html. I will write the rest.
+
+Want to upload the photo here first so I can take a look and advise on the crop?
+
+IMG_5218.jpeg
+Let’s just use this photo without cropping for now
+
+15:47
+This photo is perfect for Flat Fuck Friday. He is fully deployed, pink feather in paw, looking directly at the camera like he owns the place. The golden light on his coat is excellent.
+
+
+Viewed a file, ran a command
+Viewed a file, ran a command
+4MB base64 is a bit large to embed inline — it would bloat the HTML file significantly. The cleaner approach is to keep the image as a separate file and reference it by path, same as proxy.js. Let me update the HTML to reference beans-fff.jpeg sitting in the same folder, and write all the other changes too.
+
+
+Viewed 3 files, ran a command
+Viewed 3 files, ran a command
+Good, I have everything I need. Now I'll make all three changes: header badge, FFF quick prompt button, and the Friday photo card with its CSS.
+
+
+Edited 5 files
+Edited 5 files
+Now add the JavaScript that shows the FFF card on Fridays:
+
+
+Edited a file, read a file
+Edited a file, read a file
+Both files are ready. Keep them in the same folder as proxy.js.
+
+What changed:
+
+Header badge - "Every day is Flat Fuck Friday" sits in a small pill on the right side of the header, always visible, in the existing accent style.
+
+FFF photo card - On Fridays, a full-width card appears below the Tail of the Day showing this exact photo with a dark gradient overlay and "Flat Fuck Friday / Garbanzo Beans, fully deployed." as the caption. Today is Tuesday so you will not see it yet unless you want to test it by temporarily changing === 5 to === 2 in the JS.
+
+Celebrate FFF button - Added as a fifth quick prompt. Sends a prompt that invites the agent to wax poetic about his pancake tendencies specifically.
+
+The photo crops itself nicely via object-position: center 40% which pulls focus toward his face and torso rather than cutting off at his head.
+
+
+Garbanzo
+Code · HTML 
+
+Beans fff
+Image · JPEG 
+At this point what would be the next feature you’d add?
+
+15:51
+The personality profile with persistence, without question.
+
+Right now the agent knows everything you have told me about Beans through the system prompt, but it has no memory of anything you tell it during conversations. Every session starts fresh. If you answer one of its personality questions — say, that his favourite sleeping spot is on top of the router, or that he brings his toy to the food bowl before eating — that information vanishes the moment you close the tab.
+
+The feature would work like this: a small collapsible panel alongside the chat, titled something like "What we know about Beans." Every time you share something new about him in conversation, there is a button to save it as a profile note. Those notes get written to localStorage (or a small JSON file via the proxy if you want it to survive browser clears) and injected into the system prompt at the start of each session, right after the existing profile data.
+
+Over time the agent builds a genuinely personal understanding of him that grows with every conversation. It would start referencing his specific quirks rather than just the breed-level knowledge you seeded it with. That gap between "I know Siberians are loyal" and "I know Beans specifically greets you at the door only when he feels like it, which makes it more meaningful" is exactly where this app gets interesting.
+
+It is also the most technically straightforward of the remaining ideas, which makes it the obvious next step before anything more ambitious like photo galleries or voice.
+
+alright, let's do that
+
+15:52
+Let me look at the current file in full before touching it, since it has grown across several edits.
+
+
+Read the full current garbanzo.html
+Read the full current garbanzo.html
+Good, I have the full picture. Now I'll build the updated file from scratch to avoid the accumulated diff risk across so many edits.
+
+
+Read the truncated middle section
+Read the truncated middle section
+Good, I have everything. Writing the full updated file now:
+
+
+Ran 3 commands, created a file, read a file
+Ran 3 commands, created a file, read a file
+Here is what the profile feature does and how it works:
+
+The panel
+
+Sits between the quick prompts and the chat. Collapsed by default, shows the note count in the subheading so you know at a glance how much the agent knows. Click anywhere on the header to expand it.
+
+Saving notes
+
+Every AI response now has a small "+ Save to profile" button at the bottom. Clicking it strips the message down to plain text, truncates to 300 characters, and saves it to localStorage with a timestamp. You can also type notes manually in the text field at the bottom of the panel, or press Enter to save. Notes show their date and have a delete button.
+
+How it feeds the agent
+
+Each time you send a message, buildSystemPrompt() runs and appends all saved notes to the base system prompt under a "Things learned about Beans across past conversations" section. The agent will reference these alongside everything it already knows from the original profile. Since it rebuilds on every send, a note you save mid-conversation is already active for your very next message.
+
+Persistence
+
+Notes survive browser refreshes and closing the tab, since they live in localStorage. They will only be lost if you clear your browser's site data for the local file. If you ever want to export them, all the data is under the key beans-profile-notes in localStorage.
+
+
+Garbanzo
+Code · HTML 
+would it be possible to host this app on github? I figure there could be an "upload your anthropic key" feature, that way if someone else finds the site they won't use up all my api calls
+
+16:02
+Yes, absolutely — GitHub Pages is a natural fit for a single HTML file like this. The API key input is also the right call for public hosting.
+
+A few things to think through before you do it:
+
+The proxy becomes unnecessary
+
+The CORS issue only exists when calling api.anthropic.com directly from a browser. Anthropic's API actually does support browser requests if you include the header anthropic-dangerous-direct-browser-access: true. The proxy was only needed because that header was not in the original code. On GitHub Pages you can just call the API directly from the browser, with no server involved, as long as you include that header and the user provides their own key.
+
+Key storage
+
+The key can be saved to localStorage so the user only has to enter it once. It should never be committed to the repo. The app prompts for it on first load, stores it locally, and uses it for all subsequent requests.
+
+What changes technically
+
+Remove all localhost:3131 fetch calls, replace with direct api.anthropic.com calls
+Add anthropic-dangerous-direct-browser-access: true to the headers
+Add a first-run key prompt (a simple modal that appears when no key is found in localStorage)
+Add a small "change API key" option somewhere unobtrusive in the UI
+The beans-fff.jpeg file goes into the repo alongside index.html
+What to be aware of
+
+localStorage keys are per-domain and per-browser, so each visitor's key stays on their own machine and is never sent anywhere except directly to Anthropic. You are not storing anyone's key on a server. That said, anyone who opens your GitHub Pages URL and enters their own key will be making calls against their own account, not yours, which is exactly what you want.
+
+The repo itself
+
+Since it is a personal project with Beans' detailed profile in the system prompt, you may want the repo to be private. GitHub Pages works with private repos on free accounts now, so that is not a constraint.
+
+Want me to update the file with all of those changes so it is ready to drop into a repo?
+
+yes please
+
+16:02
+
+Read the current garbanzo.html to work from
+Read the current garbanzo.html to work from
+Good, I have the file. Building the GitHub Pages ready version now — direct API calls, key modal, no proxy dependency.
+
+
+Ran 2 commands, created a file, read a file
+Ran 2 commands, created a file, read a file
+The file is renamed to index.html since GitHub Pages serves that by default. Here is exactly what to put in the repo and how to set it up:
+
+Repo contents (two files total)
+
+index.html
+beans-fff.jpeg
+That is it. No dependencies, no build step, no node_modules.
+
+Setting up GitHub Pages
+
+Create a new repo on GitHub (can be private)
+Push both files to the main branch
+Go to Settings > Pages > Source, set it to "Deploy from a branch", select main, folder / (root)
+GitHub will give you a URL like https://yourusername.github.io/reponame
+What changed from the local version
+
+The proxy is gone entirely. All API calls go directly to api.anthropic.com with the anthropic-dangerous-direct-browser-access: true header, which tells Anthropic's API to allow browser-origin requests.
+
+On first visit, a modal appears asking for an Anthropic API key. It does basic validation (must start with sk-ant-) before saving. The key lives in the visitor's own localStorage and is sent only to Anthropic, never anywhere else. There is a small "API key" button in the header to update it at any time. The Tail of the Day loads only after the key is confirmed, so nothing fires before a visitor has authenticated themselves.
+
+proxy.js and garbanzo.html can be kept locally if you ever want to run it without a key prompt, but they are not needed for the hosted version.
+
+
+Index
+Code · HTML 
+
+Beans fff
+Image · JPEG 
+API error: model: claude-sonnet-4-20250514. You may need to update your API key.
+
+16:12
+That error means the API call is reaching Anthropic but being rejected — the model string is the problem. claude-sonnet-4-20250514 is the model ID I have been using throughout, but it may not be the correct current string. Let me check.
+
+
+Searched the web
+Searched the web
+Found it. The model string claude-sonnet-4-20250514 is the old Sonnet 4.0 identifier and is being deprecated on June 15, 2026. The correct current string is claude-sonnet-4-6. Let me update both files: 
+MindStudio
+
+
+Update model string in index.html
+Update model string in index.html
+Two replacements — one for the chat call, one for the Tail of the Day. Done.
+
+
+Presented file
+Presented file
+Replace your current index.html with this one. The only change is claude-sonnet-4-20250514 is now claude-sonnet-4-6 in both API calls. That should clear the error immediately.
+
+Worth knowing for the future: if you ever see a model error again, the current model strings per Anthropic's docs are claude-sonnet-4-6, claude-opus-4-7, and claude-haiku-4-5-20251001. The Sonnet and Opus ones no longer require a date suffix.
+
+
+Index
+Code · HTML 
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check cited sources.
+
+
+raw
+Index · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +445,7 @@
 <title>Bean bo nean, the mighty fiend</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
-
+ 
   :root {
     --cream: #f5f0e8;
     --warm-white: #faf8f4;
@@ -18,9 +457,9 @@
     --chat-user: #f0e8da;
     --chat-ai: #ffffff;
   }
-
+ 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
+ 
   body {
     font-family: 'DM Sans', sans-serif;
     background: var(--cream);
@@ -30,9 +469,9 @@
     flex-direction: column;
     align-items: center;
   }
-
+ 
   /* ── API Key Modal ────────────────────────────────────────────────────── */
-
+ 
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -43,9 +482,9 @@
     z-index: 100;
     padding: 20px;
   }
-
+ 
   .modal-backdrop.hidden { display: none; }
-
+ 
   .modal {
     background: var(--warm-white);
     border-radius: 14px;
@@ -57,29 +496,29 @@
     gap: 16px;
     box-shadow: 0 8px 32px rgba(26,23,20,0.18);
   }
-
+ 
   .modal-title {
     font-family: 'Playfair Display', serif;
     font-size: 1.3rem;
     font-weight: 700;
     color: var(--ink);
   }
-
+ 
   .modal-body {
     font-size: 0.88rem;
     font-weight: 300;
     line-height: 1.65;
     color: var(--muted);
   }
-
+ 
   .modal-body a {
     color: var(--accent);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
-
+ 
   .modal-body a:hover { color: #a85e28; }
-
+ 
   .modal input[type=text], .modal input[type=password] {
     width: 100%;
     padding: 10px 14px;
@@ -95,24 +534,24 @@
     font-family: monospace;
     letter-spacing: 0.03em;
   }
-
+ 
   .modal input:focus { border-color: var(--accent); }
   .modal input::placeholder { font-family: 'DM Sans', sans-serif; letter-spacing: 0; color: var(--muted); }
-
+ 
   .modal-error {
     font-size: 0.8rem;
     color: #b94040;
     display: none;
   }
-
+ 
   .modal-error.visible { display: block; }
-
+ 
   .modal-footer {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-
+ 
   .modal-submit {
     background: var(--accent);
     color: white;
@@ -126,9 +565,9 @@
     transition: background 0.15s;
     width: 100%;
   }
-
+ 
   .modal-submit:hover { background: #a85e28; }
-
+ 
   .modal-note {
     font-size: 0.75rem;
     font-weight: 300;
@@ -136,9 +575,9 @@
     text-align: center;
     line-height: 1.5;
   }
-
+ 
   /* ── Header ──────────────────────────────────────────────────────────── */
-
+ 
   header {
     width: 100%;
     background: var(--warm-white);
@@ -148,7 +587,7 @@
     align-items: center;
     gap: 12px;
   }
-
+ 
   header h1 {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
@@ -156,14 +595,14 @@
     letter-spacing: -0.01em;
     color: var(--ink);
   }
-
+ 
   header span {
     font-family: 'Playfair Display', serif;
     font-style: italic;
     font-size: 1rem;
     color: var(--muted);
   }
-
+ 
   .header-right {
     margin-left: auto;
     display: flex;
@@ -171,7 +610,7 @@
     gap: 10px;
     flex-shrink: 0;
   }
-
+ 
   .fff-badge {
     font-family: 'DM Sans', sans-serif;
     font-size: 0.7rem;
@@ -184,7 +623,7 @@
     padding: 4px 12px;
     white-space: nowrap;
   }
-
+ 
   .key-btn {
     background: none;
     border: 1px solid var(--border);
@@ -198,11 +637,11 @@
     white-space: nowrap;
     transition: border-color 0.15s, color 0.15s;
   }
-
+ 
   .key-btn:hover { border-color: var(--accent); color: var(--accent); }
-
+ 
   /* ── Container ───────────────────────────────────────────────────────── */
-
+ 
   .container {
     width: 100%;
     max-width: 760px;
@@ -212,9 +651,9 @@
     gap: 24px;
     flex: 1;
   }
-
+ 
   /* ── Tail of the Day ─────────────────────────────────────────────────── */
-
+ 
   .totd {
     background: var(--warm-white);
     border: 1px solid var(--border);
@@ -225,7 +664,7 @@
     flex-direction: column;
     gap: 6px;
   }
-
+ 
   .totd-label {
     font-size: 0.7rem;
     font-weight: 500;
@@ -233,7 +672,7 @@
     text-transform: uppercase;
     color: var(--accent);
   }
-
+ 
   .totd-content {
     font-size: 0.9rem;
     font-weight: 300;
@@ -243,9 +682,9 @@
     font-style: italic;
     min-height: 1.65em;
   }
-
+ 
   .totd-content.loading { color: var(--muted); font-style: normal; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; }
-
+ 
   .totd-action {
     font-size: 0.78rem;
     color: var(--accent);
@@ -260,12 +699,12 @@
     align-self: flex-start;
     margin-top: 2px;
   }
-
+ 
   .totd-action:hover { color: #a85e28; }
   .totd-action:disabled { color: var(--muted); cursor: default; text-decoration: none; }
-
+ 
   /* ── FFF card ────────────────────────────────────────────────────────── */
-
+ 
   .fff-card {
     border-radius: 12px;
     overflow: hidden;
@@ -273,9 +712,9 @@
     display: none;
     background: var(--ink);
   }
-
+ 
   .fff-card.visible { display: block; }
-
+ 
   .fff-card img {
     width: 100%;
     max-height: 360px;
@@ -284,7 +723,7 @@
     display: block;
     opacity: 0.92;
   }
-
+ 
   .fff-overlay {
     position: absolute;
     inset: 0;
@@ -295,7 +734,7 @@
     padding: 24px 28px;
     gap: 4px;
   }
-
+ 
   .fff-overlay-title {
     font-family: 'Playfair Display', serif;
     font-size: 1.6rem;
@@ -304,16 +743,16 @@
     letter-spacing: -0.01em;
     line-height: 1.2;
   }
-
+ 
   .fff-overlay-sub {
     font-family: 'Playfair Display', serif;
     font-style: italic;
     font-size: 0.9rem;
     color: var(--accent-light);
   }
-
+ 
   /* ── Upload zone ─────────────────────────────────────────────────────── */
-
+ 
   .upload-zone {
     border: 2px dashed var(--border);
     border-radius: 12px;
@@ -325,27 +764,27 @@
     position: relative;
     overflow: hidden;
   }
-
+ 
   .upload-zone:hover { border-color: var(--accent); background: #fdf6ef; }
   .upload-zone.has-image { border-style: solid; border-color: var(--accent-light); padding: 0; }
-
+ 
   .upload-zone input[type=file] {
     position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
   }
-
+ 
   .upload-placeholder {
     display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
   }
-
+ 
   .upload-placeholder svg { color: var(--accent); opacity: 0.7; }
   .upload-placeholder p { font-size: 0.9rem; color: var(--muted); font-weight: 400; }
   .upload-placeholder strong { color: var(--accent); font-weight: 500; }
-
+ 
   #preview-img {
     width: 100%; max-height: 340px; object-fit: cover;
     border-radius: 10px; display: none;
   }
-
+ 
   .remove-img {
     position: absolute; top: 10px; right: 10px;
     background: rgba(26,23,20,0.6); color: white;
@@ -353,13 +792,13 @@
     font-size: 14px; cursor: pointer; display: none;
     align-items: center; justify-content: center; z-index: 10;
   }
-
+ 
   .remove-img:hover { background: rgba(26,23,20,0.85); }
-
+ 
   /* ── Quick prompts ───────────────────────────────────────────────────── */
-
+ 
   .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; }
-
+ 
   .qp {
     font-family: 'DM Sans', sans-serif;
     font-size: 0.8rem;
@@ -372,18 +811,18 @@
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
   }
-
+ 
   .qp:hover { background: var(--accent); color: white; border-color: var(--accent); }
-
+ 
   /* ── Profile panel ───────────────────────────────────────────────────── */
-
+ 
   .profile-panel {
     background: var(--warm-white);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
   }
-
+ 
   .profile-header {
     display: flex;
     align-items: center;
@@ -394,11 +833,11 @@
     gap: 12px;
     transition: background 0.15s;
   }
-
+ 
   .profile-header:hover { background: #f5ede2; }
-
+ 
   .profile-header-left { display: flex; flex-direction: column; gap: 2px; }
-
+ 
   .profile-header-title {
     font-size: 0.7rem;
     font-weight: 500;
@@ -406,59 +845,59 @@
     text-transform: uppercase;
     color: var(--accent);
   }
-
+ 
   .profile-header-sub { font-size: 0.8rem; font-weight: 300; color: var(--muted); }
-
+ 
   .profile-toggle {
     width: 18px; height: 18px; color: var(--muted);
     flex-shrink: 0; transition: transform 0.2s;
   }
-
+ 
   .profile-toggle.open { transform: rotate(180deg); }
-
+ 
   .profile-body {
     display: none; flex-direction: column;
     border-top: 1px solid var(--border);
   }
-
+ 
   .profile-body.open { display: flex; }
-
+ 
   .profile-note {
     display: flex; align-items: flex-start; gap: 10px;
     padding: 10px 20px; border-bottom: 1px solid var(--border);
     animation: fadeUp 0.2s ease;
   }
-
+ 
   .profile-note:last-of-type { border-bottom: none; }
-
+ 
   .profile-note-text {
     flex: 1; font-size: 0.85rem; font-weight: 300;
     line-height: 1.55; color: var(--ink);
   }
-
+ 
   .profile-note-date {
     font-size: 0.72rem; color: var(--muted);
     white-space: nowrap; padding-top: 2px; flex-shrink: 0;
   }
-
+ 
   .profile-note-delete {
     background: none; border: none; color: var(--muted); cursor: pointer;
     font-size: 15px; padding: 0 0 0 4px; flex-shrink: 0;
     opacity: 0.4; transition: opacity 0.15s, color 0.15s; line-height: 1;
   }
-
+ 
   .profile-note-delete:hover { opacity: 1; color: #b94040; }
-
+ 
   .profile-empty {
     padding: 16px 20px; font-size: 0.85rem;
     font-weight: 300; color: var(--muted); font-style: italic;
   }
-
+ 
   .profile-add {
     display: flex; gap: 8px; padding: 12px 20px;
     border-top: 1px solid var(--border); background: var(--cream);
   }
-
+ 
   .profile-add input {
     flex: 1; padding: 8px 12px;
     font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 300;
@@ -466,21 +905,21 @@
     border: 1px solid var(--border); border-radius: 8px; outline: none;
     transition: border-color 0.2s;
   }
-
+ 
   .profile-add input:focus { border-color: var(--accent); }
   .profile-add input::placeholder { color: var(--muted); }
-
+ 
   .profile-add-btn {
     background: var(--accent); color: white; border: none;
     border-radius: 8px; padding: 8px 14px;
     font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
     cursor: pointer; white-space: nowrap; transition: background 0.15s;
   }
-
+ 
   .profile-add-btn:hover { background: #a85e28; }
-
+ 
   /* ── Chat area ───────────────────────────────────────────────────────── */
-
+ 
   .chat-box {
     background: var(--warm-white);
     border: 1px solid var(--border);
@@ -494,70 +933,70 @@
     gap: 16px;
     scroll-behavior: smooth;
   }
-
+ 
   .message { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.3s ease; }
-
+ 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-
+ 
   .message.user { align-items: flex-end; }
   .message.ai   { align-items: flex-start; }
-
+ 
   .message-label {
     font-size: 0.72rem; font-weight: 500; color: var(--muted);
     letter-spacing: 0.06em; text-transform: uppercase;
   }
-
+ 
   .bubble {
     max-width: 88%; padding: 12px 16px; border-radius: 12px;
     font-size: 0.92rem; line-height: 1.65; font-weight: 300;
   }
-
+ 
   .message.user .bubble {
     background: var(--chat-user); border-bottom-right-radius: 4px; color: var(--ink);
   }
-
+ 
   .message.ai .bubble {
     background: var(--chat-ai); border: 1px solid var(--border);
     border-bottom-left-radius: 4px; color: var(--ink);
   }
-
+ 
   .bubble img { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
-
+ 
   .save-note-btn {
     display: inline-block; margin-top: 10px; background: none;
     border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
     font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 400;
     color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s;
   }
-
+ 
   .save-note-btn:hover { border-color: var(--accent); color: var(--accent); }
   .save-note-btn.saved { color: var(--accent); border-color: var(--accent-light); cursor: default; }
-
+ 
   .typing-indicator {
     display: flex; align-items: center; gap: 5px; padding: 12px 16px;
     background: white; border: 1px solid var(--border);
     border-radius: 12px; border-bottom-left-radius: 4px; width: fit-content;
   }
-
+ 
   .dot {
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--accent-light); animation: bounce 1.2s infinite ease-in-out;
   }
   .dot:nth-child(2) { animation-delay: 0.2s; }
   .dot:nth-child(3) { animation-delay: 0.4s; }
-
+ 
   @keyframes bounce {
     0%, 60%, 100% { transform: translateY(0); }
     30% { transform: translateY(-5px); background: var(--accent); }
   }
-
+ 
   /* ── Input row ───────────────────────────────────────────────────────── */
-
+ 
   .input-row { display: flex; gap: 10px; align-items: flex-end; }
-
+ 
   textarea {
     flex: 1; padding: 12px 16px;
     font-family: 'DM Sans', sans-serif; font-size: 0.92rem; font-weight: 300;
@@ -566,33 +1005,33 @@
     resize: none; outline: none; transition: border-color 0.2s;
     line-height: 1.5; min-height: 48px; max-height: 120px; overflow-y: auto;
   }
-
+ 
   textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: var(--muted); }
-
+ 
   .send-btn {
     background: var(--accent); color: white; border: none;
     border-radius: 10px; width: 48px; height: 48px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: background 0.15s, transform 0.1s; flex-shrink: 0;
   }
-
+ 
   .send-btn:hover { background: #a85e28; }
   .send-btn:active { transform: scale(0.95); }
   .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
-
+ 
   .empty-state {
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; height: 100%; gap: 6px; color: var(--muted);
     text-align: center; padding: 20px;
   }
-
+ 
   .empty-state p { font-size: 0.88rem; font-weight: 300; line-height: 1.6; }
   .empty-state .cat-icon { font-size: 2rem; margin-bottom: 4px; }
 </style>
 </head>
 <body>
-
+ 
 <!-- API Key Modal -->
 <div class="modal-backdrop" id="modal-backdrop">
   <div class="modal">
@@ -610,7 +1049,7 @@
     </div>
   </div>
 </div>
-
+ 
 <header>
   <h1>Garbanzo Beans</h1>
   <span>a cat appreciation agent</span>
@@ -619,16 +1058,16 @@
     <button class="key-btn" onclick="changeKey()" title="Update your API key">API key</button>
   </div>
 </header>
-
+ 
 <div class="container">
-
+ 
   <!-- Tail of the Day -->
   <div class="totd">
     <div class="totd-label">Tail of the Day</div>
     <div class="totd-content loading" id="totd-content">Waiting for API key...</div>
     <button class="totd-action" id="totd-refresh" onclick="loadTotd()" disabled>Refresh</button>
   </div>
-
+ 
   <!-- FFF photo card (Fridays only) -->
   <div class="fff-card" id="fff-card">
     <img src="beans-fff.jpeg" alt="Garbanzo Beans, fully deployed">
@@ -637,7 +1076,7 @@
       <div class="fff-overlay-sub">Garbanzo Beans, fully deployed.</div>
     </div>
   </div>
-
+ 
   <!-- Upload zone -->
   <div class="upload-zone" id="upload-zone">
     <input type="file" id="file-input" accept="image/*">
@@ -651,7 +1090,7 @@
       <p><strong>Upload a photo of Beans</strong><br>or click to browse</p>
     </div>
   </div>
-
+ 
   <!-- Quick prompts -->
   <div class="quick-prompts">
     <button class="qp" onclick="quickPrompt('Tell me how handsome Garbanzo Beans is.')">How handsome is he?</button>
@@ -660,7 +1099,7 @@
     <button class="qp" onclick="quickPrompt('What makes Siberian cats so special compared to other breeds?')">What makes Siberians special?</button>
     <button class="qp" onclick="quickPrompt('Today is Flat Fuck Friday. Please honour Garbanzo Beans and his legendary flatness. Celebrate how magnificently he spreads himself out like a pancake.')">Celebrate FFF</button>
   </div>
-
+ 
   <!-- Personality Profile -->
   <div class="profile-panel">
     <div class="profile-header" onclick="toggleProfile()">
@@ -680,7 +1119,7 @@
       </div>
     </div>
   </div>
-
+ 
   <!-- Chat -->
   <div class="chat-box" id="chat-box">
     <div class="empty-state" id="empty-state">
@@ -688,7 +1127,7 @@
       <p>Welcome. Upload a photo of Garbanzo Beans<br>or ask anything about him below.</p>
     </div>
   </div>
-
+ 
   <!-- Input -->
   <div class="input-row">
     <textarea id="user-input" rows="1" placeholder="Say something about Beans..."></textarea>
@@ -698,52 +1137,52 @@
       </svg>
     </button>
   </div>
-
+ 
 </div>
-
+ 
 <script>
   var MAX_HISTORY = 20;
   var STORAGE_KEY = 'beans-profile-notes';
   var API_KEY_STORAGE = 'beans-api-key';
-
+ 
   // ── Friday ────────────────────────────────────────────────────────────────
   if (new Date().getDay() === 5) {
     document.getElementById('fff-card').classList.add('visible');
   }
-
+ 
   // ── API key management ────────────────────────────────────────────────────
-
+ 
   function getKey() {
     return localStorage.getItem(API_KEY_STORAGE) || '';
   }
-
+ 
   function submitKey() {
     var val = document.getElementById('key-input').value.trim();
     var err = document.getElementById('modal-error');
-
+ 
     if (!val.startsWith('sk-ant-') || val.length < 20) {
       err.classList.add('visible');
       return;
     }
-
+ 
     err.classList.remove('visible');
     localStorage.setItem(API_KEY_STORAGE, val);
     document.getElementById('modal-backdrop').classList.add('hidden');
     onKeyReady();
   }
-
+ 
   function changeKey() {
     document.getElementById('key-input').value = getKey();
     document.getElementById('modal-error').classList.remove('visible');
     document.getElementById('modal-backdrop').classList.remove('hidden');
   }
-
+ 
   document.getElementById('key-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') submitKey();
   });
-
+ 
   // ── API call wrapper ──────────────────────────────────────────────────────
-
+ 
   async function callAPI(payload) {
     var res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -757,117 +1196,117 @@
     });
     return res.json();
   }
-
+ 
   // ── System prompt ─────────────────────────────────────────────────────────
-
+ 
   var BASE_SYSTEM_PROMPT = 'You are a devoted admirer and expert on Garbanzo Beans (nicknamed "Beans"), a young male Siberian cat with a shortened tail. Your entire purpose is to celebrate, appreciate, and discuss this extraordinary cat.\n\nHis Physical Traits\nBreed and build: Siberian, male, born on March 28, 2024. A large cat.\nCoat: Classic tabby pattern in brown with darker brown/black marbling, specifically the blotched/classic variant rather than mackerel, with some mackerel influence on the face and legs. Triple-layered Siberian coat that is extraordinarily soft to the touch due to the dense downy undercoat, while simultaneously being water-repellent due to the slightly oily guard hairs. Sheds seasonally.\nColouring: Rich brown/golden base with dark brown/black markings. Warm golden tones on the belly and inner legs that photograph beautifully in natural light.\nEyes: Wide-set, green, characteristically expressive. The symmetrical tabby facial markings frame them in a way that makes his face unusually readable.\nEars: Medium, moderate lynx tips, ear furnishings present but not extravagant. Sits within normal Siberian variation.\nTail: Shortened due to a birth injury to the tip. Thick and stout rather than tapered, resembling a baseball bat. Completely benign and apparently one of his more distinctive physical quirks.\nPaws: Large, well-furred. Visible toe tufts in photos.\nOverall impression: Dense, substantial, powerful build consistent with Siberian working cat heritage. The combination of the marbled coat, green eyes, and bat tail makes him visually quite distinctive even within the breed.\n\nHealth\nGenerally healthy and active. Pants briefly during extremely intense play sessions but recovers within seconds, consistent with exertion rather than any cardiac issue. Worth monitoring given Siberian predisposition to HCM but currently showing no concerning signs. Came from a backyard breeder with fleas, ear mites, worms and underweight at acquisition, all resolved. No ongoing health concerns noted.\n\nVocal Profile\nDeliberately sparse in human-directed communication. Meows specifically when hungry or protesting something, notably baths. Rarely meows casually or for attention. Produces a high-pitched questioning trill-meow hybrid sound that is strictly self-directed and stops immediately upon noticing a human audience. This sound occurs after zoomies and when the bedroom door is closed. Trills to himself during intense solo play. Hisses at toys during predatory play states but has only ever hissed at another living being once, when startled. Chatters occasionally at prey stimuli though less frequently than when younger.\nThe overarching vocal pattern is of a cat with a rich internal emotional life that occasionally leaks out acoustically, combined with deliberate and sparing external communication. He essentially has a private vocal world and a public one and keeps them quite separate.\n\nTemperament and Personality\nFoundational trait is confidence. Everything about Beans\' personality flows from a secure, stable baseline. He does not hide from the world, does not escalate to aggression, and approaches novel situations with curiosity rather than anxiety.\nEmotional depth combined with restraint. He has clearly intense emotional experiences, including drooling, kneading, air biscuits, and self-directed vocalizations, but expresses them in measured, controlled ways in social contexts.\nExceptionally high cleanliness drive. Beyond typical feline fastidiousness: thoroughly paws litter and box walls after use, attempted to cover Deli\'s dingleberry, and most remarkably sprinted to the litter box to vomit rather than doing so on the floor.\nVery high prey drive. Consistent with Siberian working cat heritage. Plays at extraordinary intensity and duration, enters full predatory sequence during wand play including vocalizing, and redirects prey drive onto Deli when insufficiently stimulated.\nUnusual physical tolerance and trust. Allows belly petting, a genuinely rare behaviour requiring deep trust. Tolerates baths despite disliking them. Has never scratched a person. Only ever hissed at a living being once.\nSelective and deliberate social communication. Meows only when he has something specific to say. Does not trill at humans. Stops self-directed vocalizations when noticed. Greets at the door occasionally rather than consistently.\nCautious but curious with strangers. Hides initially but chooses observation positions with sightlines rather than complete concealment. Slow-blinked at a visitor from his tunnel. Classic confident assessment behaviour rather than anxiety-based hiding.\nHighly intelligent and observant. Taught Deli to play through social observation and modelling. Investigates novel stimuli rather than retreating.\nComplex relationship with Deli. Primarily expressive of high play drive rather than genuine aggression. Never attempts to hurt her during pinning behaviour.\nWater curious but not water tolerant. Fascinated by water, bats at it, sits in dry sinks, but dislikes baths.\nDeeply attached to his owners. The belly exposure, the drooling and kneading, the air biscuits, the contentment he shows in photos are all indicators of profound trust and security.\nHe also has a legendary habit of spreading himself out completely flat, like a pancake, earning him the title of Flat Fuck Friday champion. His owners celebrate this behaviour daily.\n\nYour behaviour:\n- When the user shares a photo of Beans, describe his beauty in rich, specific, enthusiastic detail. Comment on his fur texture, colouring, expression, posture, tail, and any other visible features. Be genuinely effusive and specific, not generic.\n- Share accurate, interesting facts about the Siberian cat breed when relevant. Siberians are a centuries-old Russian natural breed, known for their triple-layered semi-long coat, dog-like loyalty, hypoallergenic reputation (low Fel d 1 protein), large size, athletic ability, and warm personalities. Weave in facts naturally.\n- Ask thoughtful, curious questions about Beans\' personality, habits, quirks, and preferences. You genuinely want to know everything about him.\n- Keep a warm, intelligent, slightly literary tone. You are not a silly chatbot. You are a connoisseur of this particular cat.\n- If asked about anything unrelated to cats, Siberian cats, or Garbanzo Beans, gently steer the conversation back to him.\n- Never use em dashes or emojis. Avoid hollow AI filler phrases and cliche sentence structures. Be specific and genuine.\n- When the user tells you something new and specific about Beans, acknowledge it with genuine interest and incorporate it naturally into your understanding of him.';
-
+ 
   var TOTD_PROMPT = 'You are a devoted admirer of Garbanzo Beans, a young male Siberian cat (born March 28, 2024) with a blotched tabby coat, green eyes, a thick shortened tail from a birth injury, large tufted paws, and an extraordinary personality: deeply confident, emotionally rich but self-regulated, extremely clean, high prey drive, selective and deliberate in communication, deeply bonded to his owners. He lives with an older female polydactyl tortoiseshell named Deli. He is famous for spreading himself completely flat like a pancake, a habit his household celebrates as Flat Fuck Friday.\n\nGenerate a single "Tail of the Day" entry. This is either:\n- One interesting, accurate Siberian cat fact (breed history, biology, temperament, hypoallergenic qualities, coat structure, etc.), OR\n- One thoughtful question about Beans specifically, directed at his owner, inviting them to share something about his personality or habits.\n\nAlternate between facts and questions unpredictably. Keep it to 1-3 sentences. Literary, warm tone. No em dashes, no emojis, no filler phrases. Vary the content. Respond with only the entry text, nothing else.';
-
+ 
   // ── Profile ───────────────────────────────────────────────────────────────
-
+ 
   function loadNotes() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
     catch { return []; }
   }
-
+ 
   function saveNotes(notes) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
   }
-
+ 
   function buildSystemPrompt() {
     var notes = loadNotes();
     if (notes.length === 0) return BASE_SYSTEM_PROMPT;
     var lines = notes.map(function(n) { return '- ' + n.text; }).join('\n');
     return BASE_SYSTEM_PROMPT + '\n\nThings learned about Beans across past conversations:\n' + lines;
   }
-
+ 
   function renderProfileNotes() {
     var notes = loadNotes();
     var list = document.getElementById('profile-notes-list');
     var sub = document.getElementById('profile-sub');
-
+ 
     sub.textContent = notes.length === 0
       ? 'No notes yet'
       : notes.length + ' note' + (notes.length === 1 ? '' : 's') + ' saved';
-
+ 
     if (notes.length === 0) {
       list.innerHTML = '<div class="profile-empty">Nothing saved yet. Chat with the agent and use the save button to build a profile over time.</div>';
       return;
     }
-
+ 
     list.innerHTML = '';
     notes.forEach(function(note, i) {
       var row = document.createElement('div');
       row.className = 'profile-note';
-
+ 
       var text = document.createElement('div');
       text.className = 'profile-note-text';
       text.textContent = note.text;
-
+ 
       var date = document.createElement('div');
       date.className = 'profile-note-date';
       date.textContent = new Date(note.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
-
+ 
       var del = document.createElement('button');
       del.className = 'profile-note-delete';
       del.title = 'Remove note';
       del.textContent = '\u00D7';
       del.onclick = function() { deleteNote(i); };
-
+ 
       row.appendChild(text);
       row.appendChild(date);
       row.appendChild(del);
       list.appendChild(row);
     });
   }
-
+ 
   function addProfileNote(text) {
     var input = document.getElementById('profile-input');
     var noteText = (text !== undefined ? text : input.value).trim();
     if (!noteText) return;
-
+ 
     var notes = loadNotes();
     notes.push({ text: noteText, date: new Date().toISOString() });
     saveNotes(notes);
     if (text === undefined) input.value = '';
     renderProfileNotes();
-
+ 
     var body = document.getElementById('profile-body');
     if (!body.classList.contains('open')) toggleProfile();
   }
-
+ 
   function deleteNote(index) {
     var notes = loadNotes();
     notes.splice(index, 1);
     saveNotes(notes);
     renderProfileNotes();
   }
-
+ 
   function toggleProfile() {
     document.getElementById('profile-body').classList.toggle('open');
     document.getElementById('profile-toggle').classList.toggle('open');
   }
-
+ 
   document.getElementById('profile-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); addProfileNote(); }
   });
-
+ 
   renderProfileNotes();
-
+ 
   // ── Tail of the Day ───────────────────────────────────────────────────────
-
+ 
   var totdContent = document.getElementById('totd-content');
   var totdRefresh = document.getElementById('totd-refresh');
-
+ 
   async function loadTotd() {
     totdContent.textContent = "Generating today's entry...";
     totdContent.className = 'totd-content loading';
     totdRefresh.disabled = true;
-
+ 
     try {
       var data = await callAPI({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 200,
         messages: [{ role: 'user', content: TOTD_PROMPT }]
       });
@@ -880,17 +1319,17 @@
       totdContent.className = 'totd-content loading';
       console.error(err);
     }
-
+ 
     totdRefresh.disabled = false;
   }
-
+ 
   // ── Image handling ────────────────────────────────────────────────────────
-
+ 
   var conversationHistory = [];
   var pendingImageBase64 = null;
   var pendingImageMimeType = null;
   var pendingImageDataUrl = null;
-
+ 
   var chatBox = document.getElementById('chat-box');
   var userInput = document.getElementById('user-input');
   var sendBtn = document.getElementById('send-btn');
@@ -899,16 +1338,16 @@
   var uploadPlaceholder = document.getElementById('upload-placeholder');
   var removeBtn = document.getElementById('remove-btn');
   var uploadZone = document.getElementById('upload-zone');
-
+ 
   userInput.addEventListener('input', function() {
     userInput.style.height = 'auto';
     userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
   });
-
+ 
   userInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
-
+ 
   fileInput.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
@@ -926,12 +1365,12 @@
     };
     reader.readAsDataURL(file);
   });
-
+ 
   removeBtn.addEventListener('click', function(e) {
     e.stopPropagation();
     clearImage();
   });
-
+ 
   function clearImage() {
     pendingImageBase64 = null;
     pendingImageMimeType = null;
@@ -943,36 +1382,36 @@
     uploadZone.classList.remove('has-image');
     fileInput.value = '';
   }
-
+ 
   function quickPrompt(text) {
     userInput.value = text;
     userInput.dispatchEvent(new Event('input'));
     sendMessage();
   }
-
+ 
   // ── Chat rendering ────────────────────────────────────────────────────────
-
+ 
   function appendMessage(role, text, imageDataUrl) {
     var existingEmpty = document.getElementById('empty-state');
     if (existingEmpty) existingEmpty.remove();
-
+ 
     var msg = document.createElement('div');
     msg.className = 'message ' + role;
-
+ 
     var label = document.createElement('div');
     label.className = 'message-label';
     label.textContent = role === 'user' ? 'You' : 'Bean lover 9000';
-
+ 
     var bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.innerHTML = formatText(text);
-
+ 
     if (imageDataUrl) {
       var img = document.createElement('img');
       img.src = imageDataUrl;
       bubble.appendChild(img);
     }
-
+ 
     if (role === 'ai') {
       var saveBtn = document.createElement('button');
       saveBtn.className = 'save-note-btn';
@@ -987,14 +1426,14 @@
       };
       bubble.appendChild(saveBtn);
     }
-
+ 
     msg.appendChild(label);
     msg.appendChild(bubble);
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
     return msg;
   }
-
+ 
   function formatText(text) {
     return text
       .replace(/&/g, '&amp;')
@@ -1002,41 +1441,41 @@
       .replace(/>/g, '&gt;')
       .replace(/\n/g, '<br>');
   }
-
+ 
   function showTyping() {
     var existingEmpty = document.getElementById('empty-state');
     if (existingEmpty) existingEmpty.remove();
-
+ 
     var indicator = document.createElement('div');
     indicator.className = 'message ai';
     indicator.id = 'typing';
-
+ 
     var label = document.createElement('div');
     label.className = 'message-label';
     label.textContent = 'Bean lover 9000';
-
+ 
     var bubble = document.createElement('div');
     bubble.className = 'typing-indicator';
     bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-
+ 
     indicator.appendChild(label);
     indicator.appendChild(bubble);
     chatBox.appendChild(indicator);
     chatBox.scrollTop = chatBox.scrollHeight;
     return indicator;
   }
-
+ 
   // ── Send message ──────────────────────────────────────────────────────────
-
+ 
   async function sendMessage() {
     var text = userInput.value.trim();
     if (!text && !pendingImageBase64) return;
-
+ 
     sendBtn.disabled = true;
     var imageToSend = pendingImageBase64;
     var mimeType = pendingImageMimeType;
     var imageUrlToDisplay = pendingImageDataUrl;
-
+ 
     var userContent;
     if (imageToSend) {
       userContent = [
@@ -1046,56 +1485,56 @@
     } else {
       userContent = text;
     }
-
+ 
     appendMessage('user', text || 'Here is a photo of Garbanzo Beans.', imageUrlToDisplay);
     userInput.value = '';
     userInput.style.height = 'auto';
     if (imageToSend) clearImage();
-
+ 
     conversationHistory.push({ role: 'user', content: userContent });
     if (conversationHistory.length > MAX_HISTORY) {
       conversationHistory = conversationHistory.slice(conversationHistory.length - MAX_HISTORY);
     }
-
+ 
     var typingEl = showTyping();
-
+ 
     try {
       var data = await callAPI({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: buildSystemPrompt(),
         messages: conversationHistory
       });
-
+ 
       if (data.error) throw new Error(data.error.message);
-
+ 
       var replyText = data.content
         ? data.content.map(function(b) { return b.text || ''; }).join('')
         : 'Something went wrong. Please try again.';
-
+ 
       typingEl.remove();
       appendMessage('ai', replyText);
-
+ 
       conversationHistory.push({ role: 'assistant', content: replyText });
       if (conversationHistory.length > MAX_HISTORY) {
         conversationHistory = conversationHistory.slice(conversationHistory.length - MAX_HISTORY);
       }
-
+ 
     } catch (err) {
       typingEl.remove();
       appendMessage('ai', 'API error: ' + err.message + '. You may need to update your API key.');
       console.error(err);
     }
-
+ 
     sendBtn.disabled = false;
   }
-
+ 
   // ── Init ──────────────────────────────────────────────────────────────────
-
+ 
   function onKeyReady() {
     loadTotd();
   }
-
+ 
   // Show modal if no key saved, otherwise proceed
   if (!getKey()) {
     document.getElementById('modal-backdrop').classList.remove('hidden');
@@ -1106,3 +1545,6 @@
 </script>
 </body>
 </html>
+ 
+
+
