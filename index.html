@@ -479,6 +479,113 @@
 
   .profile-add-btn:hover { background: #a85e28; }
 
+  /* ── Current interests panel ─────────────────────────────────────────── */
+
+  .interests-panel {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .interests-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    gap: 12px;
+    transition: background 0.15s;
+  }
+
+  .interests-header:hover { background: #f5ede2; }
+  .interests-header-left { display: flex; flex-direction: column; gap: 2px; }
+
+  .interests-header-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .interests-header-sub { font-size: 0.8rem; font-weight: 300; color: var(--muted); }
+
+  .interests-toggle {
+    width: 18px; height: 18px; color: var(--muted);
+    flex-shrink: 0; transition: transform 0.2s;
+  }
+
+  .interests-toggle.open { transform: rotate(180deg); }
+
+  .interests-body {
+    display: none; flex-direction: column;
+    border-top: 1px solid var(--border);
+  }
+
+  .interests-body.open { display: flex; }
+
+  .interest-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 20px; border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.2s ease;
+  }
+
+  .interest-item:last-of-type { border-bottom: none; }
+
+  .interest-item-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+
+  .interest-item-name { font-size: 0.88rem; font-weight: 400; color: var(--ink); line-height: 1.4; }
+
+  .interest-item-note { font-size: 0.78rem; font-weight: 300; color: var(--muted); font-style: italic; line-height: 1.4; }
+
+  .interest-item-date {
+    font-size: 0.72rem; color: var(--muted);
+    white-space: nowrap; padding-top: 2px; flex-shrink: 0;
+  }
+
+  .interest-item-delete {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 15px; padding: 0 0 0 4px; flex-shrink: 0;
+    opacity: 0.4; transition: opacity 0.15s, color 0.15s; line-height: 1;
+  }
+
+  .interest-item-delete:hover { opacity: 1; color: #b94040; }
+
+  .interests-empty {
+    padding: 16px 20px; font-size: 0.85rem;
+    font-weight: 300; color: var(--muted); font-style: italic;
+  }
+
+  .interests-add {
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 12px 20px; border-top: 1px solid var(--border); background: var(--cream);
+  }
+
+  .interests-add-row { display: flex; gap: 8px; }
+
+  .interests-add input {
+    flex: 1; padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 300;
+    color: var(--ink); background: var(--warm-white);
+    border: 1px solid var(--border); border-radius: 8px; outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .interests-add input:focus { border-color: var(--accent); }
+  .interests-add input::placeholder { color: var(--muted); }
+
+  .interests-add-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 8px; padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: background 0.15s;
+    align-self: flex-end;
+  }
+
+  .interests-add-btn:hover { background: #a85e28; }
+
   /* ── Chat area ───────────────────────────────────────────────────────── */
 
   .chat-box {
@@ -527,10 +634,11 @@
   .bubble img { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
 
   .save-note-btn {
-    display: inline-block; margin-top: 10px; background: none;
+    display: block; margin-top: 10px; background: none;
     border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
     font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 400;
     color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    width: fit-content;
   }
 
   .save-note-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -681,6 +789,31 @@
     </div>
   </div>
 
+  <!-- Current Interests -->
+  <div class="interests-panel">
+    <div class="interests-header" onclick="toggleInterests()">
+      <div class="interests-header-left">
+        <div class="interests-header-title">Currently into</div>
+        <div class="interests-header-sub" id="interests-sub">Loading...</div>
+      </div>
+      <svg class="interests-toggle" id="interests-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+    <div class="interests-body" id="interests-body">
+      <div id="interests-list"></div>
+      <div class="interests-add">
+        <div class="interests-add-row">
+          <input type="text" id="interest-name-input" placeholder="What is he into? (e.g. chairs)" maxlength="80">
+        </div>
+        <div class="interests-add-row">
+          <input type="text" id="interest-note-input" placeholder="Any details? (optional)" maxlength="160">
+          <button class="interests-add-btn" onclick="addInterest()">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Chat -->
   <div class="chat-box" id="chat-box">
     <div class="empty-state" id="empty-state">
@@ -777,9 +910,22 @@
 
   function buildSystemPrompt() {
     var notes = loadNotes();
-    if (notes.length === 0) return BASE_SYSTEM_PROMPT;
-    var lines = notes.map(function(n) { return '- ' + n.text; }).join('\n');
-    return BASE_SYSTEM_PROMPT + '\n\nThings learned about Beans across past conversations:\n' + lines;
+    var interests = getInterests();
+    var prompt = BASE_SYSTEM_PROMPT;
+
+    if (interests.length > 0) {
+      var interestLines = interests.map(function(i) {
+        return '- ' + i.name + (i.note ? ': ' + i.note : '');
+      }).join('\n');
+      prompt += '\n\nBeans\' current interests and obsessions (updated by his owner):\n' + interestLines;
+    }
+
+    if (notes.length > 0) {
+      var noteLines = notes.map(function(n) { return '- ' + n.text; }).join('\n');
+      prompt += '\n\nThings learned about Beans across past conversations:\n' + noteLines;
+    }
+
+    return prompt;
   }
 
   function renderProfileNotes() {
@@ -854,6 +1000,111 @@
   });
 
   renderProfileNotes();
+
+  // ── Current interests ─────────────────────────────────────────────────────
+
+  var INTERESTS_KEY = 'beans-interests';
+
+  function loadInterests() {
+    try { return JSON.parse(localStorage.getItem(INTERESTS_KEY)) || null; }
+    catch { return null; }
+  }
+
+  function saveInterests(items) {
+    localStorage.setItem(INTERESTS_KEY, JSON.stringify(items));
+  }
+
+  function getInterests() {
+    var stored = loadInterests();
+    if (stored) return stored;
+    // Seed with the current known interest
+    var seed = [{ name: 'Chairs', note: 'His current obsession. All chairs. Every chair.', date: new Date().toISOString() }];
+    saveInterests(seed);
+    return seed;
+  }
+
+  function renderInterests() {
+    var items = getInterests();
+    var list = document.getElementById('interests-list');
+    var sub = document.getElementById('interests-sub');
+
+    sub.textContent = items.length === 0
+      ? 'Nothing logged yet'
+      : items.map(function(i) { return i.name; }).join(', ');
+
+    if (items.length === 0) {
+      list.innerHTML = '<div class="interests-empty">Nothing logged yet. Add what he is currently obsessed with.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    items.forEach(function(item, idx) {
+      var row = document.createElement('div');
+      row.className = 'interest-item';
+
+      var content = document.createElement('div');
+      content.className = 'interest-item-content';
+
+      var name = document.createElement('div');
+      name.className = 'interest-item-name';
+      name.textContent = item.name;
+      content.appendChild(name);
+
+      if (item.note) {
+        var note = document.createElement('div');
+        note.className = 'interest-item-note';
+        note.textContent = item.note;
+        content.appendChild(note);
+      }
+
+      var date = document.createElement('div');
+      date.className = 'interest-item-date';
+      date.textContent = new Date(item.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+
+      var del = document.createElement('button');
+      del.className = 'interest-item-delete';
+      del.title = 'Remove';
+      del.textContent = '\u00D7';
+      (function(i) { del.onclick = function() { deleteInterest(i); }; })(idx);
+
+      row.appendChild(content);
+      row.appendChild(date);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  function addInterest() {
+    var nameInput = document.getElementById('interest-name-input');
+    var noteInput = document.getElementById('interest-note-input');
+    var name = nameInput.value.trim();
+    if (!name) return;
+
+    var items = getInterests();
+    items.unshift({ name: name, note: noteInput.value.trim(), date: new Date().toISOString() });
+    saveInterests(items);
+    nameInput.value = '';
+    noteInput.value = '';
+    renderInterests();
+  }
+
+  function deleteInterest(index) {
+    var items = getInterests();
+    items.splice(index, 1);
+    saveInterests(items);
+    renderInterests();
+  }
+
+  function toggleInterests() {
+    document.getElementById('interests-body').classList.toggle('open');
+    document.getElementById('interests-toggle').classList.toggle('open');
+  }
+
+  document.getElementById('interest-name-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addInterest(); }
+  });
+
+  renderInterests();
 
   // ── Tail of the Day ───────────────────────────────────────────────────────
 
