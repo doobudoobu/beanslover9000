@@ -347,15 +347,19 @@
   .upload-zone {
     border: 2px dashed var(--border); border-radius: 12px; padding: 22px;
     text-align: center; background: var(--warm-white); cursor: pointer;
-    transition: border-color 0.2s, background 0.2s; position: relative; overflow: hidden;
+    transition: border-color 0.2s, background 0.2s; position: relative;
   }
 
   .upload-zone:hover { border-color: var(--accent); background: #fdf6ef; }
-  .upload-zone.has-image { border-style: solid; border-color: var(--accent-light); padding: 0; }
+  .upload-zone.has-image { border-style: solid; border-color: var(--accent-light); cursor: default; }
 
+  /* The file input only covers the zone when no image is selected */
   .upload-zone input[type=file] {
     position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    pointer-events: auto;
   }
+
+  .upload-zone.has-image input[type=file] { pointer-events: none; }
 
   .upload-placeholder {
     display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none;
@@ -365,17 +369,36 @@
   .upload-placeholder p { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
   .upload-placeholder strong { color: var(--accent); font-weight: 500; }
 
-  #preview-img { width: 100%; max-height: 280px; object-fit: cover; border-radius: 10px; display: none; }
-
-  .remove-img {
-    position: absolute; top: 10px; right: 10px;
-    background: rgba(26,23,20,0.6); color: white;
-    border: none; border-radius: 50%; width: 28px; height: 28px;
-    font-size: 14px; cursor: pointer; display: none;
-    align-items: center; justify-content: center; z-index: 10;
+  /* Selected state — shown instead of placeholder when image is loaded */
+  .upload-selected {
+    display: none; flex-direction: column; align-items: center; gap: 0; position: relative;
   }
 
-  .remove-img:hover { background: rgba(26,23,20,0.85); }
+  .upload-zone.has-image .upload-placeholder { display: none; }
+  .upload-zone.has-image .upload-selected { display: flex; }
+
+  #preview-img {
+    width: 100%; max-height: 260px; object-fit: cover;
+    border-radius: 10px; display: block;
+  }
+
+  .upload-selected-label {
+    width: 100%; padding: 8px 12px;
+    font-size: 0.78rem; font-weight: 400; color: var(--accent);
+    text-align: center; background: #fdf6ef;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .remove-img {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(26,23,20,0.62); color: white;
+    border: none; border-radius: 50%; width: 28px; height: 28px;
+    font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; z-index: 10;
+    pointer-events: auto;
+  }
+
+  .remove-img:hover { background: rgba(26,23,20,0.88); }
 
   /* ── Quick prompts ───────────────────────────────────────────────────────── */
 
@@ -714,14 +737,17 @@
       <!-- Upload zone -->
       <div class="upload-zone" id="upload-zone">
         <input type="file" id="file-input" accept="image/*">
-        <button class="remove-img" id="remove-btn" title="Remove photo">&#x2715;</button>
-        <img id="preview-img" alt="Garbanzo Beans">
         <div class="upload-placeholder" id="upload-placeholder">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
             <polyline points="21 15 16 10 5 21"/>
           </svg>
           <p><strong>Upload a photo of Beans</strong><br>or click to browse</p>
+        </div>
+        <div class="upload-selected" id="upload-selected">
+          <img id="preview-img" alt="Garbanzo Beans">
+          <div class="upload-selected-label" id="upload-selected-label">Photo ready to send</div>
+          <button class="remove-img" id="remove-btn" title="Remove photo" onclick="clearImageClick(event)">&#x2715;</button>
         </div>
       </div>
 
@@ -973,8 +999,9 @@
     reader.onload = function(ev) {
       var dataUrl = ev.target.result;
       pendingImageDataUrl = dataUrl; pendingImageBase64 = dataUrl.split(',')[1];
-      previewImg.src = dataUrl; previewImg.style.display = 'block';
-      uploadPlaceholder.style.display = 'none'; removeBtn.style.display = 'flex';
+      previewImg.src = dataUrl;
+      var fname = file.name || 'photo';
+      document.getElementById('upload-selected-label').textContent = fname + ' — type a message or just hit send';
       uploadZone.classList.add('has-image');
     };
     reader.readAsDataURL(file);
@@ -982,10 +1009,11 @@
 
   removeBtn.addEventListener('click', function(e) { e.stopPropagation(); clearImage(); });
 
+  function clearImageClick(e) { e.stopPropagation(); clearImage(); }
+
   function clearImage() {
     pendingImageBase64 = null; pendingImageMimeType = null; pendingImageDataUrl = null;
-    previewImg.src = ''; previewImg.style.display = 'none';
-    uploadPlaceholder.style.display = 'flex'; removeBtn.style.display = 'none';
+    previewImg.src = '';
     uploadZone.classList.remove('has-image'); fileInput.value = '';
   }
 
